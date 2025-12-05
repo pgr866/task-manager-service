@@ -1,0 +1,275 @@
+{
+  "name": "Practica8_Ejercicio1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "5aab41db-6d3e-4b06-83f7-6c46367acac4",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "c1aada7f-9b47-4676-903b-1169df5e013b",
+      "name": "Webhook",
+      "webhookId": "5aab41db-6d3e-4b06-83f7-6c46367acac4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "04455c7a-5311-4c01-a4f1-561af6336811",
+              "leftValue": "={{ $json.body.title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "3632a4d8-46aa-4c04-ba37-d3c93768f56b",
+              "leftValue": "={{ $json.body.title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "d4a91c35-04ee-4121-b59d-f264a262895c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Bad request: title is required"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        0,
+        192
+      ],
+      "id": "45bb46ba-c108-4c66-95aa-f06087b21d49",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "task",
+          "mode": "list",
+          "cachedResultName": "task"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "done": false,
+            "title": "={{ $json.body.title }}",
+            "description": "={{ $json.body.title }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "done",
+              "displayName": "done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "outputColumns": [
+            "*"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9774e9e6-c68e-4151-9df2-9bb3526d3a88",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "X7H0pxoO7b1JAB1V",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "queue": "task_created",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rabbitmq",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "98030923-cc29-4f85-b9c1-2bde031c9f3e",
+      "name": "RabbitMQ",
+      "credentials": {
+        "rabbitmq": {
+          "id": "NmoVU40SsqtvN0rW",
+          "name": "RabbitMQ account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('Insert rows in a table').item.json.toJsonString() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "e2530418-2964-4988-a438-53b4441fa672",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "RabbitMQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RabbitMQ": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6b9d4455-d7ea-4b19-8ca2-777da093f62f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d07094e47b331378d208376fc5d7d46232620374140afe6c53daa22637725b3b"
+  },
+  "id": "eNQ6OtzKu4fUVPaV",
+  "tags": []
+}

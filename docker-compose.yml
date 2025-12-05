@@ -1,0 +1,108 @@
+
+services:
+  # Servicio de la API Web (Flask)
+  web:
+    build: ./web
+    restart: always
+    container_name: task-manager-web
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./web:/app  # Montaje para desarrollo en vivo
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/taskdb
+      - RABBITMQ_URL=amqp://guest:guest@mq:5672/%2F
+    depends_on:
+      - db
+      - mq
+    networks:
+      - task-network
+
+  # Servicio del Trabajador Asíncrono (Consumer)
+  worker:
+    build: ./worker
+    restart: always
+    container_name: task-manager-worker
+    volumes:
+      - ./worker:/app  # Montaje para desarrollo en vivo
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@mq:5672/%2F
+    depends_on:
+      - mq
+    networks:
+      - task-network
+  
+    # Servicio del Notificador
+  notifier:
+    build: ./notifier
+    restart: always
+    container_name: task-manager-notifier
+    volumes:
+      - ./notifier:/app
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@mq:5672/%2F
+      - WEBHOOK_URL=https://webhook.site/1f5a7d67-c786-45da-9785-ab61f9af4417
+    depends_on:
+      - mq
+    networks:
+      - task-network
+
+  # Servicio de la Base de Datos
+  db:
+    image: postgres:14-alpine
+    container_name: task-manager-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=taskdb
+    ports:
+      - "5433:5432"  # Exponer para depuración externa
+    networks:
+      - task-network
+
+  # Servicio del Bróker de Mensajes
+  mq:
+    image: rabbitmq:3-management-alpine
+    container_name: task-manager-mq
+    ports:
+      - "5672:5672"   # Puerto para la comunicación AMQP
+      - "15672:15672" # Puerto para la interfaz de gestión web
+    networks:
+      - task-network
+  
+  error_handler:
+    build: ./error_handler
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@mq:5672/
+    volumes:
+      - ./logs:/logs
+    depends_on:
+      - mq
+    networks:
+      - task-network
+
+  # Servicio n8n
+  n8n:
+    image: n8nio/n8n
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    volumes:
+      - .n8n:/home/node/.n8n
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      - mq
+      - db
+    networks:
+      - task-network # Red para conectarse a P6
+
+volumes:
+  postgres_data:
+  n8n:
+
+networks:
+  task-network:

@@ -1,0 +1,2 @@
+{"description": "no title"}
+{"headers": {"host": "localhost:5678", "user-agent": "curl/8.16.0", "accept": "*/*", "content-type": "application/json", "content-length": "78"}, "params": {}, "query": {}, "body": {"title": "Tarea enviada por Webhook n8n", "description": "A cola RabbitMQ"}, "webhookUrl": "http://localhost:5678/webhook-test/763e9d69-5ac9-4506-8a2c-b546a40b843a", "executionMode": "test"}
